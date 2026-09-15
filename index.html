@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101419" />
+  <title>Catan Dev Card Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CATAN</p>
+        <h1>Dev Card Assistant</h1>
+      </div>
+      <div class="header-actions">
+        <button id="undoBtn" class="icon-btn" type="button" title="Undo last action" aria-label="Undo last action" disabled>↶</button>
+        <button id="resetBtn" class="icon-btn danger" type="button" title="Reset game" aria-label="Reset game">↺</button>
+      </div>
+    </header>
+
+    <section class="deck-card" aria-labelledby="deckHeading">
+      <div class="deck-main">
+        <div>
+          <p id="deckHeading" class="section-label">Cards remaining</p>
+          <div class="deck-count">
+            <span id="cardsRemaining">25</span>
+            <span class="deck-total">/ 25</span>
+          </div>
+        </div>
+        <div class="deck-ring" aria-hidden="true">
+          <span id="deckRingText">100%</span>
+        </div>
+      </div>
+
+      <button id="unknownDrawBtn" class="primary-btn" type="button">
+        <span class="primary-btn-title">Unknown Draw</span>
+        <span class="primary-btn-subtitle">Opponent buys a dev card</span>
+      </button>
+
+      <div class="mini-stats">
+        <div><span class="mini-label">Drawn</span><strong id="drawnCount">0</strong></div>
+        <div><span class="mini-label">Known</span><strong id="knownCount">0</strong></div>
+        <div><span class="mini-label">Hidden</span><strong id="hiddenCount">0</strong></div>
+      </div>
+    </section>
+
+    <section class="cards-section">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">Card odds</p>
+          <h2>Next draw</h2>
+        </div>
+        <button id="helpBtn" class="text-btn" type="button" aria-expanded="false" aria-controls="helpPanel">How it works</button>
+      </div>
+
+      <div id="helpPanel" class="help-panel" hidden>
+        <p><strong>Drew</strong> = you buy this card. It records both the draw and its known identity.</p>
+        <p><strong>Seen</strong> = an opponent's previously hidden card gets played or revealed.</p>
+        <p>Unknown opponent cards stay part of the probability model until their identity becomes known.</p>
+      </div>
+
+      <div id="cardRows" class="card-rows"></div>
+    </section>
+
+    <footer class="footer-note">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="statusText">Fresh game · no data is saved</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
