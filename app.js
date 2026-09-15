@@ -35,12 +35,12 @@
     helpBtn: document.getElementById("helpBtn"),
     helpPanel: document.getElementById("helpPanel"),
     statusText: document.getElementById("statusText"),
-    deckCard: document.querySelector(".deck-card"),
     deckCelebration: document.getElementById("deckCelebration")
   };
 
-  if (ICONS.devCard) els.unknownDrawIcon.src = ICONS.devCard;
-  else els.unknownDrawIcon.style.display = "none";
+  if (els.unknownDrawIcon && ICONS.devCard) {
+    els.unknownDrawIcon.src = ICONS.devCard;
+  }
 
   function cloneState(value) {
     return { drawn: value.drawn, known: { ...value.known } };
@@ -50,9 +50,17 @@
     return Object.values(state.known).reduce((sum, n) => sum + n, 0);
   }
 
-  function hiddenCount() { return state.drawn - knownTotal(); }
-  function physicalRemaining() { return TOTAL_CARDS - state.drawn; }
-  function unseenPoolSize() { return TOTAL_CARDS - knownTotal(); }
+  function hiddenCount() {
+    return state.drawn - knownTotal();
+  }
+
+  function physicalRemaining() {
+    return TOTAL_CARDS - state.drawn;
+  }
+
+  function unseenPoolSize() {
+    return TOTAL_CARDS - knownTotal();
+  }
 
   function probabilityFor(card) {
     if (physicalRemaining() <= 0) return 0;
@@ -74,13 +82,15 @@
     if (history.length > 100) history.shift();
   }
 
-  function setStatus(message) { els.statusText.textContent = message; }
+  function setStatus(message) {
+    els.statusText.textContent = message;
+  }
 
   function recordUnknownDraw() {
     if (state.drawn >= TOTAL_CARDS) return;
-    pushHistory("Opponent bought a hidden dev card");
+    pushHistory("Dev bought");
     state.drawn += 1;
-    setStatus("Opponent dev card recorded");
+    setStatus("Hidden dev recorded");
     render();
   }
 
@@ -90,7 +100,7 @@
     pushHistory(`Drew ${card.name}`);
     state.drawn += 1;
     state.known[cardId] += 1;
-    setStatus(`${card.name} draw recorded`);
+    setStatus(`${card.name} drawn`);
     render();
   }
 
@@ -99,7 +109,7 @@
     if (!card || hiddenCount() <= 0 || state.known[cardId] >= card.total) return;
     pushHistory(`Played ${card.name}`);
     state.known[cardId] += 1;
-    setStatus(`${card.name} identified from a hidden draw`);
+    setStatus(`${card.name} played`);
     render();
   }
 
@@ -115,21 +125,40 @@
     const hasActivity = state.drawn > 0 || knownTotal() > 0;
     if (hasActivity && !window.confirm("Reset this game? All counters will return to zero.")) return;
     state = freshState();
-    history.length = 0;
     previousRemaining = TOTAL_CARDS;
-    setStatus("Fresh game · no data is saved");
+    history.length = 0;
     hideCelebration();
+    setStatus("Fresh game · no data is saved");
     render();
   }
 
-  function formatPercent(value) { return `${(value * 100).toFixed(1)}%`; }
-  function formatExpected(value) { return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1); }
+  function formatPercent(value) {
+    return value === 0 ? "0%" : `${(value * 100).toFixed(1)}%`;
+  }
 
-  function iconMarkup(card) {
+  function formatExpected(value) {
+    return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
+  }
+
+  function showCelebration() {
+    if (!els.deckCelebration) return;
+    window.clearTimeout(celebrationTimer);
+    els.deckCelebration.hidden = false;
+    celebrationTimer = window.setTimeout(() => {
+      els.deckCelebration.hidden = true;
+    }, 2600);
+  }
+
+  function hideCelebration() {
+    window.clearTimeout(celebrationTimer);
+    if (els.deckCelebration) els.deckCelebration.hidden = true;
+  }
+
+  function artMarkup(card) {
     if (card.icon) {
       return `<img class="card-art" src="${card.icon}" alt="" aria-hidden="true" />`;
     }
-    return `<span class="card-fallback" aria-hidden="true">${card.short}</span>`;
+    return `<span aria-hidden="true">${card.short}</span>`;
   }
 
   function rowMarkup(card) {
@@ -137,51 +166,60 @@
     const probability = probabilityFor(card);
     const expected = expectedInDeck(card);
     const barPct = Math.max(0, Math.min(100, (expected / card.total) * 100));
-    const canDraw = state.drawn < TOTAL_CARDS && known < card.total;
-    const canReveal = hiddenCount() > 0 && known < card.total;
-    const exhausted = known >= card.total;
+    const isOut = known >= card.total;
+    const canDraw = state.drawn < TOTAL_CARDS && !isOut;
+    const canReveal = hiddenCount() > 0 && !isOut;
 
     return `
-      <article class="card-row${exhausted ? " exhausted" : ""}" data-card-id="${card.id}">
-        <span class="card-art-wrap">${iconMarkup(card)}</span>
-        <div class="card-info">
-          <div class="card-name">${card.name}</div>
-          <div class="card-sub">${known} known of ${card.total}</div>
-        </div>
-        <div class="probability">
-          <strong>${formatPercent(probability)}</strong>
-          <span>next draw</span>
-        </div>
-        <div class="estimate">
-          <div class="estimate-line">
-            <span>Est. in deck</span>
-            <span class="estimate-count">${formatExpected(expected)} / ${card.total}</span>
+      <article class="card-row${isOut ? " card-out" : ""}" data-card-id="${card.id}">
+        <div class="card-main">
+          <div class="card-identity">
+            <div class="card-art-wrap">${artMarkup(card)}</div>
+            <div class="card-copy">
+              <div class="card-name-line">
+                <div class="card-name">${card.name}</div>
+                ${isOut ? '<span class="out-badge">OUT</span>' : ""}
+              </div>
+              <div class="card-sub">${known} of ${card.total} known</div>
+            </div>
           </div>
-          <div class="progress-track" aria-hidden="true">
-            <div class="progress-fill" style="width:${barPct}%"></div>
+          <div class="probability" aria-label="${formatPercent(probability)} chance on next draw">
+            <strong>${formatPercent(probability)}</strong>
+            <span>next draw</span>
           </div>
         </div>
-        <div class="row-actions">
-          <button class="secondary-btn drew-btn" type="button" data-action="draw" data-card-id="${card.id}" ${canDraw ? "" : "disabled"} title="You drew a known ${card.name}">Drew</button>
-          <button class="secondary-btn played" type="button" data-action="played" data-card-id="${card.id}" ${canReveal ? "" : "disabled"} title="An opponent played or revealed a previously hidden ${card.name}">Played</button>
+
+        <div class="card-details">
+          <div class="estimate">
+            <div class="estimate-line">
+              <span>Est. in deck</span>
+              <strong>${formatExpected(expected)} / ${card.total}</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill" style="width:${barPct}%"></div>
+            </div>
+          </div>
+          <div class="row-actions">
+            <button
+              class="secondary-btn"
+              type="button"
+              data-action="draw"
+              data-card-id="${card.id}"
+              aria-label="I drew ${card.name}"
+              ${canDraw ? "" : "disabled"}
+            >Drew</button>
+            <button
+              class="secondary-btn played"
+              type="button"
+              data-action="played"
+              data-card-id="${card.id}"
+              aria-label="Opponent played ${card.name}"
+              ${canReveal ? "" : "disabled"}
+            >Played</button>
+          </div>
         </div>
       </article>
     `;
-  }
-
-  function celebrateDeckEmpty() {
-    clearTimeout(celebrationTimer);
-    els.deckCelebration.hidden = false;
-    els.deckCard.classList.remove("deck-empty-flash");
-    void els.deckCard.offsetWidth;
-    els.deckCard.classList.add("deck-empty-flash");
-    celebrationTimer = setTimeout(hideCelebration, 2000);
-  }
-
-  function hideCelebration() {
-    clearTimeout(celebrationTimer);
-    if (els.deckCelebration) els.deckCelebration.hidden = true;
-    if (els.deckCard) els.deckCard.classList.remove("deck-empty-flash");
   }
 
   function render() {
@@ -198,20 +236,23 @@
     document.documentElement.style.setProperty("--deck-angle", `${remainingPct * 360}deg`);
 
     els.unknownDrawBtn.disabled = state.drawn >= TOTAL_CARDS;
-    if (state.drawn >= TOTAL_CARDS) {
-      els.unknownDrawBtn.querySelector(".primary-btn-title").textContent = "Dev Deck Empty";
-      els.unknownDrawBtn.querySelector(".primary-btn-subtitle").textContent = "All 25 cards have been drawn";
-      els.unknownDrawBtn.querySelector(".primary-btn-plus").textContent = "✓";
-    } else {
-      els.unknownDrawBtn.querySelector(".primary-btn-title").textContent = "Opponent Bought a Dev Card";
-      els.unknownDrawBtn.querySelector(".primary-btn-subtitle").textContent = "Card type is still hidden";
-      els.unknownDrawBtn.querySelector(".primary-btn-plus").textContent = "+1";
-    }
-
     els.undoBtn.disabled = history.length === 0;
     els.cardRows.innerHTML = CARD_TYPES.map(rowMarkup).join("");
 
-    if (remaining === 0 && previousRemaining > 0) celebrateDeckEmpty();
+    const title = els.unknownDrawBtn.querySelector(".primary-btn-title");
+    const plus = els.unknownDrawBtn.querySelector(".primary-btn-plus");
+    if (remaining <= 0) {
+      title.textContent = "Dev Deck Empty";
+      plus.textContent = "✓";
+    } else {
+      title.textContent = "Dev Bought";
+      plus.textContent = "+1";
+    }
+
+    if (previousRemaining > 0 && remaining === 0) {
+      showCelebration();
+      setStatus("All 25 dev cards are out");
+    }
     previousRemaining = remaining;
   }
 
