@@ -90,7 +90,7 @@
     if (state.drawn >= TOTAL_CARDS) return;
     pushHistory("Dev bought");
     state.drawn += 1;
-    setStatus("Hidden dev recorded");
+    setStatus("Hidden dev added");
     render();
   }
 
@@ -100,7 +100,7 @@
     pushHistory(`Drew ${card.name}`);
     state.drawn += 1;
     state.known[cardId] += 1;
-    setStatus(`${card.name} drawn`);
+    setStatus(`You drew ${card.name}`);
     render();
   }
 
@@ -165,51 +165,40 @@
     const known = state.known[card.id];
     const probability = probabilityFor(card);
     const expected = expectedInDeck(card);
-    const barPct = Math.max(0, Math.min(100, (expected / card.total) * 100));
     const isOut = known >= card.total;
     const canDraw = state.drawn < TOTAL_CARDS && !isOut;
     const canReveal = hiddenCount() > 0 && !isOut;
 
     return `
       <article class="card-row${isOut ? " card-out" : ""}" data-card-id="${card.id}">
-        <div class="card-main">
-          <div class="card-identity">
-            <div class="card-art-wrap">${artMarkup(card)}</div>
-            <div class="card-copy">
-              <div class="card-name-line">
-                <div class="card-name">${card.name}</div>
+        <div class="card-line">
+          <button
+            class="draw-card-action"
+            type="button"
+            data-action="draw"
+            data-card-id="${card.id}"
+            aria-label="I drew ${card.name}"
+            title="Tap if you drew ${card.name}"
+            ${canDraw ? "" : "disabled"}
+          >
+            <span class="card-art-wrap">${artMarkup(card)}</span>
+            <span class="card-copy">
+              <span class="card-name-line">
+                <span class="card-name">${card.name}</span>
                 ${isOut ? '<span class="out-badge">OUT</span>' : ""}
-              </div>
-              <div class="card-sub">${known} of ${card.total} known</div>
-            </div>
-          </div>
-          <div class="probability" aria-label="${formatPercent(probability)} chance on next draw">
-            <strong>${formatPercent(probability)}</strong>
-            <span>next draw</span>
-          </div>
-        </div>
+              </span>
+              <span class="card-sub">${known} of ${card.total} known</span>
+              <span class="card-estimate">Est. left <strong>${formatExpected(expected)} / ${card.total}</strong></span>
+            </span>
+          </button>
 
-        <div class="card-details">
-          <div class="estimate">
-            <div class="estimate-line">
-              <span>Est. in deck</span>
-              <strong>${formatExpected(expected)} / ${card.total}</strong>
+          <div class="card-actions">
+            <div class="probability" aria-label="${formatPercent(probability)} chance on next draw">
+              <strong>${formatPercent(probability)}</strong>
+              <span>next draw</span>
             </div>
-            <div class="progress-track" aria-hidden="true">
-              <div class="progress-fill" style="width:${barPct}%"></div>
-            </div>
-          </div>
-          <div class="row-actions">
             <button
-              class="secondary-btn"
-              type="button"
-              data-action="draw"
-              data-card-id="${card.id}"
-              aria-label="I drew ${card.name}"
-              ${canDraw ? "" : "disabled"}
-            >Drew</button>
-            <button
-              class="secondary-btn played"
+              class="played-btn"
               type="button"
               data-action="played"
               data-card-id="${card.id}"
