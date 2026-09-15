@@ -3,6 +3,8 @@
 
   const ICONS = window.CATAN_ICONS || {};
   const TOTAL_CARDS = 25;
+  const LOW_DECK_THRESHOLD = 5;
+
   const CARD_TYPES = [
     { id: "knight", name: "Knight", short: "KNT", total: 14, icon: ICONS.knight },
     { id: "monopoly", name: "Monopoly", short: "MON", total: 2, icon: ICONS.monopoly },
@@ -22,6 +24,7 @@
   const history = [];
 
   const els = {
+    deckCard: document.querySelector(".deck-card"),
     cardsRemaining: document.getElementById("cardsRemaining"),
     deckRingText: document.getElementById("deckRingText"),
     drawnCount: document.getElementById("drawnCount"),
@@ -69,14 +72,6 @@
     return unseenPool > 0 ? unseenOfType / unseenPool : 0;
   }
 
-  function expectedInDeck(card) {
-    if (physicalRemaining() <= 0) return 0;
-    const unseenOfType = card.total - state.known[card.id];
-    const unseenPool = unseenPoolSize();
-    if (unseenPool <= 0) return 0;
-    return unseenOfType * physicalRemaining() / unseenPool;
-  }
-
   function pushHistory(label) {
     history.push({ state: cloneState(state), label });
     if (history.length > 100) history.shift();
@@ -90,26 +85,28 @@
     if (state.drawn >= TOTAL_CARDS) return;
     pushHistory("Dev bought");
     state.drawn += 1;
-    setStatus("Hidden dev added");
+    setStatus("Hidden dev recorded");
     render();
   }
 
   function recordKnownDraw(cardId) {
     const card = CARD_TYPES.find(c => c.id === cardId);
     if (!card || state.drawn >= TOTAL_CARDS || state.known[cardId] >= card.total) return;
+
     pushHistory(`Drew ${card.name}`);
     state.drawn += 1;
     state.known[cardId] += 1;
-    setStatus(`You drew ${card.name}`);
+    setStatus(`${card.name} drawn`);
     render();
   }
 
   function revealHiddenCard(cardId) {
     const card = CARD_TYPES.find(c => c.id === cardId);
     if (!card || hiddenCount() <= 0 || state.known[cardId] >= card.total) return;
+
     pushHistory(`Played ${card.name}`);
     state.known[cardId] += 1;
-    setStatus(`${card.name} played`);
+    setStatus(`${card.name} revealed`);
     render();
   }
 
@@ -124,6 +121,7 @@
   function resetGame() {
     const hasActivity = state.drawn > 0 || knownTotal() > 0;
     if (hasActivity && !window.confirm("Reset this game? All counters will return to zero.")) return;
+
     state = freshState();
     previousRemaining = TOTAL_CARDS;
     history.length = 0;
@@ -134,10 +132,6 @@
 
   function formatPercent(value) {
     return value === 0 ? "0%" : `${(value * 100).toFixed(1)}%`;
-  }
-
-  function formatExpected(value) {
-    return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
   }
 
   function showCelebration() {
@@ -158,13 +152,12 @@
     if (card.icon) {
       return `<img class="card-art" src="${card.icon}" alt="" aria-hidden="true" />`;
     }
-    return `<span aria-hidden="true">${card.short}</span>`;
+    return `<span class="card-fallback" aria-hidden="true">${card.short}</span>`;
   }
 
   function rowMarkup(card) {
     const known = state.known[card.id];
     const probability = probabilityFor(card);
-    const expected = expectedInDeck(card);
     const isOut = known >= card.total;
     const canDraw = state.drawn < TOTAL_CARDS && !isOut;
     const canReveal = hiddenCount() > 0 && !isOut;
@@ -172,31 +165,30 @@
     return `
       <article class="card-row${isOut ? " card-out" : ""}" data-card-id="${card.id}">
         <div class="card-line">
-          <button
-            class="draw-card-action"
-            type="button"
-            data-action="draw"
-            data-card-id="${card.id}"
-            aria-label="I drew ${card.name}"
-            title="Tap if you drew ${card.name}"
-            ${canDraw ? "" : "disabled"}
-          >
-            <span class="card-art-wrap">${artMarkup(card)}</span>
-            <span class="card-copy">
-              <span class="card-name-line">
-                <span class="card-name">${card.name}</span>
+          <div class="card-identity">
+            <div class="card-art-wrap">${artMarkup(card)}</div>
+            <div class="card-copy">
+              <div class="card-name-line">
+                <div class="card-name">${card.name}</div>
                 ${isOut ? '<span class="out-badge">OUT</span>' : ""}
-              </span>
-              <span class="card-sub">${known} of ${card.total} known</span>
-              <span class="card-estimate">Est. left <strong>${formatExpected(expected)} / ${card.total}</strong></span>
-            </span>
-          </button>
+              </div>
+              <div class="card-sub">${known} of ${card.total} known</div>
+            </div>
+          </div>
 
           <div class="card-actions">
             <div class="probability" aria-label="${formatPercent(probability)} chance on next draw">
               <strong>${formatPercent(probability)}</strong>
               <span>next draw</span>
             </div>
+            <button
+              class="drew-btn"
+              type="button"
+              data-action="draw"
+              data-card-id="${card.id}"
+              aria-label="I drew ${card.name}"
+              ${canDraw ? "" : "disabled"}
+            >Drew</button>
             <button
               class="played-btn"
               type="button"
@@ -223,6 +215,10 @@
     els.hiddenCount.textContent = hidden;
     els.deckRingText.textContent = `${Math.round(remainingPct * 100)}%`;
     document.documentElement.style.setProperty("--deck-angle", `${remainingPct * 360}deg`);
+
+    if (els.deckCard) {
+      els.deckCard.classList.toggle("deck-low", remaining <= LOW_DECK_THRESHOLD);
+    }
 
     els.unknownDrawBtn.disabled = state.drawn >= TOTAL_CARDS;
     els.undoBtn.disabled = history.length === 0;
@@ -258,6 +254,7 @@
   els.cardRows.addEventListener("click", event => {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
+
     const cardId = button.dataset.cardId;
     if (button.dataset.action === "draw") recordKnownDraw(cardId);
     if (button.dataset.action === "played") revealHiddenCard(cardId);
