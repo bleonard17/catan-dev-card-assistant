@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#101419" />
+  <meta name="theme-color" content="#0c2740" />
   <title>Catan Dev Card Assistant</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -16,7 +16,7 @@
       </div>
       <div class="header-actions">
         <button id="undoBtn" class="icon-btn" type="button" title="Undo last action" aria-label="Undo last action" disabled>↶</button>
-        <button id="resetBtn" class="icon-btn danger" type="button" title="Reset game" aria-label="Reset game">↺</button>
+        <button id="resetBtn" class="icon-btn" type="button" title="Reset game" aria-label="Reset game">↻</button>
       </div>
     </header>
 
@@ -35,14 +35,27 @@
       </div>
 
       <button id="unknownDrawBtn" class="primary-btn" type="button">
-        <span class="primary-btn-title">Unknown Draw</span>
-        <span class="primary-btn-subtitle">Opponent buys a dev card</span>
+        <img id="unknownDrawIcon" class="primary-btn-icon" alt="" aria-hidden="true" />
+        <span class="primary-btn-copy">
+          <span class="primary-btn-title">Opponent Bought Dev Card</span>
+          <span class="primary-btn-subtitle">Card type is still hidden</span>
+        </span>
+        <span class="primary-btn-plus" aria-hidden="true">+1</span>
       </button>
 
       <div class="mini-stats">
-        <div><span class="mini-label">Drawn</span><strong id="drawnCount">0</strong></div>
-        <div><span class="mini-label">Known</span><strong id="knownCount">0</strong></div>
-        <div><span class="mini-label">Hidden</span><strong id="hiddenCount">0</strong></div>
+        <div>
+          <span class="mini-label">Drawn</span>
+          <strong id="drawnCount">0</strong>
+        </div>
+        <div>
+          <span class="mini-label">Known</span>
+          <strong id="knownCount">0</strong>
+        </div>
+        <div>
+          <span class="mini-label">Hidden</span>
+          <strong id="hiddenCount">0</strong>
+        </div>
       </div>
     </section>
 
@@ -56,9 +69,9 @@
       </div>
 
       <div id="helpPanel" class="help-panel" hidden>
-        <p><strong>Drew</strong> = you buy this card. It records both the draw and its known identity.</p>
-        <p><strong>Seen</strong> = an opponent's previously hidden card gets played or revealed.</p>
-        <p>Unknown opponent cards stay part of the probability model until their identity becomes known.</p>
+        <p><strong>Drew</strong> = you bought this exact card. It records both the draw and its known identity.</p>
+        <p><strong>Played</strong> = an opponent plays or reveals a card that was previously hidden. For Victory Points, use this when one is revealed.</p>
+        <p>Hidden opponent cards remain part of the odds until their identity becomes known.</p>
       </div>
 
       <div id="cardRows" class="card-rows"></div>
