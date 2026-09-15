@@ -8,8 +8,6 @@
   --border-strong: #3f749c;
   --text: #ffffff;
   --muted: #c6d7e4;
-  --muted-2: #a9c0d3;
-  --blue: #238fea;
   --blue-bright: #35a0ff;
   --button-blue: #1d5f91;
   --button-blue-hover: #2475ac;
@@ -17,6 +15,7 @@
   --orange-light: #ff983d;
   --orange-dark: #b94a00;
   --orange-text: #081c2d;
+  --danger: #ff8a80;
   --success: #65d08a;
   --radius: 16px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -69,24 +68,18 @@ h2 {
   display: flex;
   gap: 6px;
 }
-.icon-btn,
-.text-btn {
-  border: 1px solid var(--border-strong);
-  background: var(--button-blue);
-  color: var(--text);
-  cursor: pointer;
-}
 .icon-btn {
   width: 42px;
   height: 42px;
   padding: 0;
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
+  background: var(--button-blue);
+  color: var(--text);
+  cursor: pointer;
   font-size: 1.08rem;
 }
-.icon-btn:hover:not(:disabled),
-.text-btn:hover {
-  background: var(--button-blue-hover);
-}
+.icon-btn:hover:not(:disabled) { background: var(--button-blue-hover); }
 .icon-btn:disabled,
 .primary-btn:disabled {
   cursor: not-allowed;
@@ -119,6 +112,7 @@ h2 {
   font-size: 2.55rem;
   font-weight: 900;
   letter-spacing: -0.06em;
+  transition: color 160ms ease;
 }
 .deck-total {
   color: var(--muted);
@@ -126,6 +120,7 @@ h2 {
   font-weight: 800;
 }
 .deck-ring {
+  --deck-accent: var(--blue-bright);
   display: grid;
   width: 54px;
   height: 54px;
@@ -133,12 +128,18 @@ h2 {
   border-radius: 50%;
   background:
     radial-gradient(circle closest-side, var(--panel) 77%, transparent 79% 100%),
-    conic-gradient(var(--blue-bright) var(--deck-angle, 360deg), #36516a 0);
+    conic-gradient(var(--deck-accent) var(--deck-angle, 360deg), #36516a 0);
+  transition: background 160ms ease, box-shadow 160ms ease;
 }
 .deck-ring span {
   color: var(--text);
   font-size: 0.7rem;
   font-weight: 900;
+}
+.deck-card.deck-low #cardsRemaining { color: var(--danger); }
+.deck-card.deck-low .deck-ring {
+  --deck-accent: var(--danger);
+  box-shadow: inset 0 0 0 1px rgba(255,138,128,0.25);
 }
 
 .primary-btn {
@@ -212,16 +213,22 @@ h2 {
 
 .cards-section { margin-top: 7px; }
 .section-heading {
-  min-height: 40px;
+  min-height: 34px;
   margin-bottom: 4px;
 }
 .text-btn {
-  min-height: 38px;
-  min-width: 92px;
-  padding: 0 10px;
-  border-radius: 10px;
-  font-size: 0.7rem;
+  padding: 3px 1px 2px;
+  border: 0;
+  border-bottom: 1px dotted var(--muted);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.72rem;
   font-weight: 750;
+}
+.text-btn:hover {
+  color: var(--text);
+  border-bottom-color: var(--text);
 }
 .help-panel {
   margin-bottom: 6px;
@@ -241,12 +248,12 @@ h2 {
   gap: 5px;
 }
 .card-row {
-  min-height: 72px;
+  min-height: 64px;
   padding: 5px 7px;
   border: 1px solid var(--border);
   border-radius: 13px;
   background: var(--panel-2);
-  transition: background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 .card-row.card-out {
   border-color: #36536a;
@@ -256,34 +263,19 @@ h2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
-.draw-card-action {
+.card-identity {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-.draw-card-action:hover:not(:disabled) .card-name {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 2px;
-}
-.draw-card-action:disabled {
-  cursor: not-allowed;
 }
 .card-art-wrap {
   display: grid;
-  width: 42px;
-  height: 56px;
-  flex: 0 0 42px;
+  width: 39px;
+  height: 52px;
+  flex: 0 0 39px;
   place-items: center;
   overflow: hidden;
   border-radius: 8px;
@@ -293,6 +285,11 @@ h2 {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+.card-fallback {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
 }
 .card-out .card-art {
   filter: grayscale(0.85) saturate(0.45) brightness(0.8);
@@ -326,35 +323,25 @@ h2 {
   letter-spacing: 0.08em;
 }
 .card-sub {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 650;
-}
-.card-estimate {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 0.64rem;
+  font-size: 0.66rem;
   font-weight: 700;
 }
-.card-estimate strong {
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 900;
-}
+
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
 }
 .probability {
-  min-width: 63px;
+  min-width: 57px;
   text-align: right;
 }
 .probability strong {
   display: block;
   color: var(--text);
-  font-size: 1.22rem;
+  font-size: 1.16rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -362,22 +349,32 @@ h2 {
   display: block;
   margin-top: 2px;
   color: var(--muted);
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
 }
+.drew-btn,
 .played-btn {
-  min-width: 64px;
   min-height: 42px;
-  padding: 0 9px;
+  padding: 0 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+.drew-btn {
+  min-width: 48px;
+  border: 1px solid var(--border-strong);
+  background: var(--button-blue);
+  color: var(--text);
+}
+.drew-btn:hover:not(:disabled) { background: var(--button-blue-hover); }
+.played-btn {
+  min-width: 58px;
   border: 2px solid #ff9d49;
   border-bottom-color: #c65300;
-  border-radius: 9px;
   background: linear-gradient(180deg, #ff933c 0%, var(--orange) 100%);
   color: var(--orange-text);
   box-shadow: 0 3px 0 var(--orange-dark);
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 900;
 }
 .played-btn:hover:not(:disabled) {
   filter: brightness(1.04);
@@ -387,6 +384,7 @@ h2 {
   transform: translateY(1px);
   box-shadow: 0 2px 0 var(--orange-dark);
 }
+.drew-btn:disabled,
 .played-btn:disabled {
   border-color: #36536a;
   background: #15334a;
@@ -478,18 +476,19 @@ h2 {
 
 @media (max-width: 370px) {
   .app-shell { padding-inline: 8px; }
-  .card-art-wrap { width: 38px; height: 51px; flex-basis: 38px; }
+  .card-art-wrap { width: 35px; height: 47px; flex-basis: 35px; }
   .card-name { font-size: 0.88rem; }
-  .probability { min-width: 58px; }
-  .probability strong { font-size: 1.1rem; }
-  .played-btn { min-width: 58px; padding-inline: 7px; }
+  .probability { min-width: 52px; }
+  .probability strong { font-size: 1.05rem; }
+  .drew-btn { min-width: 44px; padding-inline: 6px; }
+  .played-btn { min-width: 54px; padding-inline: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
