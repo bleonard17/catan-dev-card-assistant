@@ -4,16 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0c2740" />
-  <title>Catan Dev Card Assistant</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Catan Dev Card Tracker</title>
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">CATAN</p>
-        <h1>Dev Card Assistant</h1>
-      </div>
+      <h1>Catan Dev Card Tracker</h1>
       <div class="header-actions">
         <button id="undoBtn" class="icon-btn" type="button" title="Undo last action" aria-label="Undo last action" disabled>↶</button>
         <button id="resetBtn" class="icon-btn" type="button" title="Reset game" aria-label="Reset game">↻</button>
@@ -60,8 +57,8 @@
       </div>
 
       <div id="helpPanel" class="help-panel" hidden>
-        <p><strong>Drew</strong> = you bought this exact card. It records both the draw and its known identity.</p>
-        <p><strong>Played</strong> = an opponent plays or reveals a card that was previously hidden. For Victory Points, use this when one is revealed.</p>
+        <p><strong>Drew</strong> = you bought this exact card. It records the draw and its known identity.</p>
+        <p><strong>Played</strong> = an opponent plays or reveals a card that was previously hidden.</p>
         <p>Hidden opponent cards remain part of the odds until their identity becomes known.</p>
       </div>
 
@@ -74,12 +71,21 @@
     </footer>
   </main>
 
-  <script src="assets/dev-card.js"></script>
-  <script src="assets/knight.js"></script>
-  <script src="assets/monopoly.js"></script>
-  <script src="assets/road-building.js"></script>
-  <script src="assets/victory-point.js"></script>
-  <script src="assets/year-of-plenty.js"></script>
-  <script src="app.js"></script>
+  <div id="deckCelebration" class="deck-celebration" role="status" aria-live="polite" hidden>
+    <div class="celebration-burst" aria-hidden="true"></div>
+    <div class="celebration-card">
+      <span class="celebration-spark">✦</span>
+      <strong>Dev deck exhausted!</strong>
+      <span>All 25 cards are out.</span>
+    </div>
+  </div>
+
+  <script src="assets/dev-card.js?v=3"></script>
+  <script src="assets/knight.js?v=3"></script>
+  <script src="assets/monopoly.js?v=3"></script>
+  <script src="assets/road-building.js?v=3"></script>
+  <script src="assets/victory-point.js?v=3"></script>
+  <script src="assets/year-of-plenty.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
