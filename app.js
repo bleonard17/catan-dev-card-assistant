@@ -4,11 +4,11 @@
   const ICONS = window.CATAN_ICONS || {};
   const TOTAL_CARDS = 25;
   const CARD_TYPES = [
-    { id: "monopoly", name: "Monopoly", total: 2, icon: ICONS.monopoly },
-    { id: "road-building", name: "Road Building", total: 2, icon: ICONS.roadBuilding },
-    { id: "year-of-plenty", name: "Year of Plenty", total: 2, icon: ICONS.yearOfPlenty },
-    { id: "victory-point", name: "Victory Point", total: 5, icon: ICONS.victoryPoint },
-    { id: "knight", name: "Knight", total: 14, icon: ICONS.knight }
+    { id: "knight", name: "Knight", short: "KNT", total: 14, icon: ICONS.knight },
+    { id: "monopoly", name: "Monopoly", short: "MON", total: 2, icon: ICONS.monopoly },
+    { id: "year-of-plenty", name: "Year of Plenty", short: "YOP", total: 2, icon: ICONS.yearOfPlenty },
+    { id: "road-building", name: "Road Building", short: "ROAD", total: 2, icon: ICONS.roadBuilding },
+    { id: "victory-point", name: "Victory Point", short: "VP", total: 5, icon: ICONS.victoryPoint }
   ];
 
   const freshState = () => ({
@@ -17,6 +17,8 @@
   });
 
   let state = freshState();
+  let previousRemaining = TOTAL_CARDS;
+  let celebrationTimer = null;
   const history = [];
 
   const els = {
@@ -32,10 +34,13 @@
     cardRows: document.getElementById("cardRows"),
     helpBtn: document.getElementById("helpBtn"),
     helpPanel: document.getElementById("helpPanel"),
-    statusText: document.getElementById("statusText")
+    statusText: document.getElementById("statusText"),
+    deckCard: document.querySelector(".deck-card"),
+    deckCelebration: document.getElementById("deckCelebration")
   };
 
   if (ICONS.devCard) els.unknownDrawIcon.src = ICONS.devCard;
+  else els.unknownDrawIcon.style.display = "none";
 
   function cloneState(value) {
     return { drawn: value.drawn, known: { ...value.known } };
@@ -111,12 +116,21 @@
     if (hasActivity && !window.confirm("Reset this game? All counters will return to zero.")) return;
     state = freshState();
     history.length = 0;
+    previousRemaining = TOTAL_CARDS;
     setStatus("Fresh game · no data is saved");
+    hideCelebration();
     render();
   }
 
   function formatPercent(value) { return `${(value * 100).toFixed(1)}%`; }
   function formatExpected(value) { return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1); }
+
+  function iconMarkup(card) {
+    if (card.icon) {
+      return `<img class="card-art" src="${card.icon}" alt="" aria-hidden="true" />`;
+    }
+    return `<span class="card-fallback" aria-hidden="true">${card.short}</span>`;
+  }
 
   function rowMarkup(card) {
     const known = state.known[card.id];
@@ -125,41 +139,49 @@
     const barPct = Math.max(0, Math.min(100, (expected / card.total) * 100));
     const canDraw = state.drawn < TOTAL_CARDS && known < card.total;
     const canReveal = hiddenCount() > 0 && known < card.total;
+    const exhausted = known >= card.total;
 
     return `
-      <article class="card-row" data-card-id="${card.id}">
-        <div class="card-topline">
-          <div class="card-identity">
-            <span class="card-art-wrap"><img class="card-art" src="${card.icon || ""}" alt="" aria-hidden="true" /></span>
-            <div>
-              <div class="card-name">${card.name}</div>
-              <div class="card-sub">${known} known of ${card.total}</div>
-            </div>
+      <article class="card-row${exhausted ? " exhausted" : ""}" data-card-id="${card.id}">
+        <span class="card-art-wrap">${iconMarkup(card)}</span>
+        <div class="card-info">
+          <div class="card-name">${card.name}</div>
+          <div class="card-sub">${known} known of ${card.total}</div>
+        </div>
+        <div class="probability">
+          <strong>${formatPercent(probability)}</strong>
+          <span>next draw</span>
+        </div>
+        <div class="estimate">
+          <div class="estimate-line">
+            <span>Est. in deck</span>
+            <span class="estimate-count">${formatExpected(expected)} / ${card.total}</span>
           </div>
-          <div class="probability">
-            <strong>${formatPercent(probability)}</strong>
-            <span>next draw</span>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill" style="width:${barPct}%"></div>
           </div>
         </div>
-
-        <div class="row-bottom">
-          <div class="estimate">
-            <div class="estimate-line">
-              <span>Est. in deck</span>
-              <span class="estimate-count">${formatExpected(expected)} / ${card.total}</span>
-            </div>
-            <div class="progress-track" aria-hidden="true">
-              <div class="progress-fill" style="width:${barPct}%"></div>
-            </div>
-          </div>
-
-          <div class="row-actions">
-            <button class="secondary-btn drew-btn" type="button" data-action="draw" data-card-id="${card.id}" ${canDraw ? "" : "disabled"} title="You drew a known ${card.name}">Drew</button>
-            <button class="secondary-btn played" type="button" data-action="played" data-card-id="${card.id}" ${canReveal ? "" : "disabled"} title="An opponent played or revealed a previously hidden ${card.name}">Played</button>
-          </div>
+        <div class="row-actions">
+          <button class="secondary-btn drew-btn" type="button" data-action="draw" data-card-id="${card.id}" ${canDraw ? "" : "disabled"} title="You drew a known ${card.name}">Drew</button>
+          <button class="secondary-btn played" type="button" data-action="played" data-card-id="${card.id}" ${canReveal ? "" : "disabled"} title="An opponent played or revealed a previously hidden ${card.name}">Played</button>
         </div>
       </article>
     `;
+  }
+
+  function celebrateDeckEmpty() {
+    clearTimeout(celebrationTimer);
+    els.deckCelebration.hidden = false;
+    els.deckCard.classList.remove("deck-empty-flash");
+    void els.deckCard.offsetWidth;
+    els.deckCard.classList.add("deck-empty-flash");
+    celebrationTimer = setTimeout(hideCelebration, 2000);
+  }
+
+  function hideCelebration() {
+    clearTimeout(celebrationTimer);
+    if (els.deckCelebration) els.deckCelebration.hidden = true;
+    if (els.deckCard) els.deckCard.classList.remove("deck-empty-flash");
   }
 
   function render() {
@@ -176,8 +198,21 @@
     document.documentElement.style.setProperty("--deck-angle", `${remainingPct * 360}deg`);
 
     els.unknownDrawBtn.disabled = state.drawn >= TOTAL_CARDS;
+    if (state.drawn >= TOTAL_CARDS) {
+      els.unknownDrawBtn.querySelector(".primary-btn-title").textContent = "Dev Deck Empty";
+      els.unknownDrawBtn.querySelector(".primary-btn-subtitle").textContent = "All 25 cards have been drawn";
+      els.unknownDrawBtn.querySelector(".primary-btn-plus").textContent = "✓";
+    } else {
+      els.unknownDrawBtn.querySelector(".primary-btn-title").textContent = "Opponent Bought a Dev Card";
+      els.unknownDrawBtn.querySelector(".primary-btn-subtitle").textContent = "Card type is still hidden";
+      els.unknownDrawBtn.querySelector(".primary-btn-plus").textContent = "+1";
+    }
+
     els.undoBtn.disabled = history.length === 0;
     els.cardRows.innerHTML = CARD_TYPES.map(rowMarkup).join("");
+
+    if (remaining === 0 && previousRemaining > 0) celebrateDeckEmpty();
+    previousRemaining = remaining;
   }
 
   els.unknownDrawBtn.addEventListener("click", recordUnknownDraw);
