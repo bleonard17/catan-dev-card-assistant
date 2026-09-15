@@ -1,13 +1,14 @@
 (() => {
   "use strict";
 
+  const ICONS = window.CATAN_ICONS || {};
   const TOTAL_CARDS = 25;
   const CARD_TYPES = [
-    { id: "monopoly", name: "Monopoly", short: "MON", total: 2 },
-    { id: "road-building", name: "Road Building", short: "ROAD", total: 2 },
-    { id: "year-of-plenty", name: "Year of Plenty", short: "YOP", total: 2 },
-    { id: "victory-point", name: "Victory Point", short: "VP", total: 5 },
-    { id: "knight", name: "Knight", short: "KNT", total: 14 }
+    { id: "monopoly", name: "Monopoly", total: 2, icon: ICONS.monopoly },
+    { id: "road-building", name: "Road Building", total: 2, icon: ICONS.roadBuilding },
+    { id: "year-of-plenty", name: "Year of Plenty", total: 2, icon: ICONS.yearOfPlenty },
+    { id: "victory-point", name: "Victory Point", total: 5, icon: ICONS.victoryPoint },
+    { id: "knight", name: "Knight", total: 14, icon: ICONS.knight }
   ];
 
   const freshState = () => ({
@@ -25,6 +26,7 @@
     knownCount: document.getElementById("knownCount"),
     hiddenCount: document.getElementById("hiddenCount"),
     unknownDrawBtn: document.getElementById("unknownDrawBtn"),
+    unknownDrawIcon: document.getElementById("unknownDrawIcon"),
     undoBtn: document.getElementById("undoBtn"),
     resetBtn: document.getElementById("resetBtn"),
     cardRows: document.getElementById("cardRows"),
@@ -32,6 +34,8 @@
     helpPanel: document.getElementById("helpPanel"),
     statusText: document.getElementById("statusText")
   };
+
+  if (ICONS.devCard) els.unknownDrawIcon.src = ICONS.devCard;
 
   function cloneState(value) {
     return { drawn: value.drawn, known: { ...value.known } };
@@ -41,17 +45,9 @@
     return Object.values(state.known).reduce((sum, n) => sum + n, 0);
   }
 
-  function hiddenCount() {
-    return state.drawn - knownTotal();
-  }
-
-  function physicalRemaining() {
-    return TOTAL_CARDS - state.drawn;
-  }
-
-  function unseenPoolSize() {
-    return TOTAL_CARDS - knownTotal();
-  }
+  function hiddenCount() { return state.drawn - knownTotal(); }
+  function physicalRemaining() { return TOTAL_CARDS - state.drawn; }
+  function unseenPoolSize() { return TOTAL_CARDS - knownTotal(); }
 
   function probabilityFor(card) {
     if (physicalRemaining() <= 0) return 0;
@@ -73,15 +69,13 @@
     if (history.length > 100) history.shift();
   }
 
-  function setStatus(message) {
-    els.statusText.textContent = message;
-  }
+  function setStatus(message) { els.statusText.textContent = message; }
 
   function recordUnknownDraw() {
     if (state.drawn >= TOTAL_CARDS) return;
-    pushHistory("Unknown draw");
+    pushHistory("Opponent bought a hidden dev card");
     state.drawn += 1;
-    setStatus("Unknown opponent draw recorded");
+    setStatus("Opponent dev card recorded");
     render();
   }
 
@@ -98,9 +92,9 @@
   function revealHiddenCard(cardId) {
     const card = CARD_TYPES.find(c => c.id === cardId);
     if (!card || hiddenCount() <= 0 || state.known[cardId] >= card.total) return;
-    pushHistory(`Seen ${card.name}`);
+    pushHistory(`Played ${card.name}`);
     state.known[cardId] += 1;
-    setStatus(`${card.name} revealed from a hidden draw`);
+    setStatus(`${card.name} identified from a hidden draw`);
     render();
   }
 
@@ -121,13 +115,8 @@
     render();
   }
 
-  function formatPercent(value) {
-    return value === 0 ? "0%" : `${(value * 100).toFixed(1)}%`;
-  }
-
-  function formatExpected(value) {
-    return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
-  }
+  function formatPercent(value) { return `${(value * 100).toFixed(1)}%`; }
+  function formatExpected(value) { return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1); }
 
   function rowMarkup(card) {
     const known = state.known[card.id];
@@ -141,7 +130,7 @@
       <article class="card-row" data-card-id="${card.id}">
         <div class="card-topline">
           <div class="card-identity">
-            <span class="card-badge">${card.short}</span>
+            <span class="card-art-wrap"><img class="card-art" src="${card.icon || ""}" alt="" aria-hidden="true" /></span>
             <div>
               <div class="card-name">${card.name}</div>
               <div class="card-sub">${known} known of ${card.total}</div>
@@ -152,14 +141,21 @@
             <span>next draw</span>
           </div>
         </div>
+
         <div class="row-bottom">
           <div class="estimate">
-            <div class="estimate-line"><span>Est. in deck</span><span>${formatExpected(expected)} / ${card.total}</span></div>
-            <div class="progress-track" aria-hidden="true"><div class="progress-fill" style="width:${barPct}%"></div></div>
+            <div class="estimate-line">
+              <span>Est. in deck</span>
+              <span class="estimate-count">${formatExpected(expected)} / ${card.total}</span>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill" style="width:${barPct}%"></div>
+            </div>
           </div>
+
           <div class="row-actions">
-            <button class="secondary-btn drew-btn" type="button" data-action="draw" data-card-id="${card.id}" ${canDraw ? "" : "disabled"}>Drew</button>
-            <button class="secondary-btn seen seen-btn" type="button" data-action="seen" data-card-id="${card.id}" ${canReveal ? "" : "disabled"}>Seen</button>
+            <button class="secondary-btn drew-btn" type="button" data-action="draw" data-card-id="${card.id}" ${canDraw ? "" : "disabled"} title="You drew a known ${card.name}">Drew</button>
+            <button class="secondary-btn played" type="button" data-action="played" data-card-id="${card.id}" ${canReveal ? "" : "disabled"} title="An opponent played or revealed a previously hidden ${card.name}">Played</button>
           </div>
         </div>
       </article>
@@ -178,6 +174,7 @@
     els.hiddenCount.textContent = hidden;
     els.deckRingText.textContent = `${Math.round(remainingPct * 100)}%`;
     document.documentElement.style.setProperty("--deck-angle", `${remainingPct * 360}deg`);
+
     els.unknownDrawBtn.disabled = state.drawn >= TOTAL_CARDS;
     els.undoBtn.disabled = history.length === 0;
     els.cardRows.innerHTML = CARD_TYPES.map(rowMarkup).join("");
@@ -186,17 +183,19 @@
   els.unknownDrawBtn.addEventListener("click", recordUnknownDraw);
   els.undoBtn.addEventListener("click", undo);
   els.resetBtn.addEventListener("click", resetGame);
+
   els.helpBtn.addEventListener("click", () => {
     const willOpen = els.helpPanel.hidden;
     els.helpPanel.hidden = !willOpen;
     els.helpBtn.setAttribute("aria-expanded", String(willOpen));
   });
+
   els.cardRows.addEventListener("click", event => {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const cardId = button.dataset.cardId;
     if (button.dataset.action === "draw") recordKnownDraw(cardId);
-    if (button.dataset.action === "seen") revealHiddenCard(cardId);
+    if (button.dataset.action === "played") revealHiddenCard(cardId);
   });
 
   render();
