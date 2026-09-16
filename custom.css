@@ -11,7 +11,7 @@
 }
 
 .cards-section {
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
 .section-heading {
@@ -24,6 +24,14 @@
 
 .card-row {
   padding: 6px 8px;
+}
+
+.card-actions {
+  gap: 8px;
+}
+
+.probability {
+  margin-right: 2px;
 }
 
 .footer-note {
