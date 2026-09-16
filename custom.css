@@ -1,0 +1,46 @@
+.app-shell {
+  padding: 10px 12px 14px;
+}
+
+.topbar {
+  margin-bottom: 7px;
+}
+
+.deck-card {
+  padding: 12px 12px 10px;
+}
+
+.cards-section {
+  margin-top: 10px;
+}
+
+.section-heading {
+  margin-bottom: 6px;
+}
+
+.card-rows {
+  gap: 7px;
+}
+
+.card-row {
+  padding: 6px 8px;
+}
+
+.footer-note {
+  margin-top: 7px;
+}
+
+.creator-credit {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(169, 192, 211, 0.16);
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.creator-credit strong {
+  color: var(--text);
+  font-weight: 850;
+}
