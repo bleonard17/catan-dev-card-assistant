@@ -24,6 +24,7 @@
   const history = [];
 
   const els = {
+    favicon: document.getElementById("favicon"),
     deckCard: document.querySelector(".deck-card"),
     cardsRemaining: document.getElementById("cardsRemaining"),
     deckRingText: document.getElementById("deckRingText"),
@@ -41,8 +42,9 @@
     deckCelebration: document.getElementById("deckCelebration")
   };
 
-  if (els.unknownDrawIcon && ICONS.devCard) {
-    els.unknownDrawIcon.src = ICONS.devCard;
+  if (ICONS.devCard) {
+    if (els.unknownDrawIcon) els.unknownDrawIcon.src = ICONS.devCard;
+    if (els.favicon) els.favicon.href = ICONS.devCard;
   }
 
   function cloneState(value) {
